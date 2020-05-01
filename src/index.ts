@@ -30,7 +30,6 @@ let serviceManager : ServiceManager;
   flex watcher start
   flex watcher reload // auto reload?
   flex watcher stop
-
 */
 
 cliCommand
@@ -121,6 +120,20 @@ configCommand
     .command("delete <name>")
     .alias("del")
     .action(delayExecution((name: string) => serviceManager.removeService(name)))
+
+const watcherCommand = cliCommand
+    .command("watcher")
+    .alias("nsa")
+    .description("Control the watcher service");
+
+watcherCommand
+    .command("start")
+    .option("-D, --detach", "Start the watcher in the background (using tmux)")
+    .description("Start the watcher service")
+
+watcherCommand
+    .command("stop")
+    .description("Stop the watcher service")
 
 cliCommand
     .name("flex")
