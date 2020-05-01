@@ -34,7 +34,7 @@ let serviceManager : ServiceManager;
 */
 
 cliCommand
-    .option("-s, --config <file>", "Specifies the config file", "config.toml")
+    .option("-c, --config <file>", "Specifies the config file", "config.toml")
     .option("-d, --delay <seconds>", 'Delay the command for n seconds', input => parseInt(input), 0);
 
 cliCommand
