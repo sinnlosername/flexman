@@ -4,8 +4,6 @@ import {ServiceManager} from "./service/servicemanager";
 import {ServiceStatus} from "./service/servicestatus";
 import {handleProgramError, UserError} from "./error";
 
-export type FlexCommandProvider = (basic: Command, serviceManager: ServiceManager) => Command;
-
 let serviceManager : ServiceManager;
 
 /*
