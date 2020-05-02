@@ -4,6 +4,7 @@ import {Service} from "./service";
 import {map as _map, uniq as _uniq, flatten as _flatten} from 'lodash';
 import {HasToConfigObject, startEditor} from "../misc";
 import {serviceConfigTemplate} from "../constants";
+import {UserError} from "../error";
 
 export class ServiceManager implements HasToConfigObject {
     private readonly configFile: string
@@ -27,7 +28,7 @@ export class ServiceManager implements HasToConfigObject {
             .map(service => service.name);
 
         if (resolvedNames.length === 0)
-            throw new Error(`Unable to resolve name '${name}'`);
+            throw new UserError(`Unable to resolve name '${name}'`);
 
         return resolvedNames;
     }
@@ -81,8 +82,7 @@ export class ServiceManager implements HasToConfigObject {
         const service = this.getService(name)
 
         if (service == null) {
-            console.log(`Service not found: ${name}`)
-            return;
+            throw new UserError("Service not found: ${name}")
         }
 
         this.services.splice(this.services.indexOf(service), 1)

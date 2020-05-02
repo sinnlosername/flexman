@@ -2,6 +2,7 @@ import {Command, program as cliCommand} from 'commander';
 import {existsSync} from 'fs';
 import {ServiceManager} from "./service/servicemanager";
 import {ServiceStatus} from "./service/servicestatus";
+import {handleProgramError, UserError} from "./error";
 
 export type FlexCommandProvider = (basic: Command, serviceManager: ServiceManager) => Command;
 
@@ -92,7 +93,7 @@ const configCommand = cliCommand
 configCommand
     .command("enable <name>")
     .alias("en")
-    .action(delayExecution((name: string) => {
+    .action(delayExecution(async (name: string) => {
         if (serviceManager == null) return;
         serviceManager.getServices(serviceManager.resolveName(name)).forEach(service => {
             service.enabled = true;
@@ -104,7 +105,7 @@ configCommand
 configCommand
     .command("disable <name>")
     .alias("dis")
-    .action(delayExecution((name: string) => {
+    .action(delayExecution(async (name: string) => {
         serviceManager.getServices(serviceManager.resolveName(name)).forEach(service => {
             service.enabled = false;
             console.log(`Disabled: ${service.name}`);
@@ -114,12 +115,12 @@ configCommand
 
 configCommand
     .command("edit <name>")
-    .action(delayExecution((name: string) => serviceManager.edit(name)));
+    .action(delayExecution(async (name: string) => serviceManager.edit(name)));
 
 configCommand
     .command("delete <name>")
     .alias("del")
-    .action(delayExecution((name: string) => serviceManager.removeService(name)))
+    .action(delayExecution(async (name: string) => serviceManager.removeService(name)))
 
 const watcherCommand = cliCommand
     .command("watcher")
@@ -143,22 +144,18 @@ cliCommand
 cliCommand
     .parseAsync(process.argv)
     .then(afterParse)
-    .catch(e => {
-        console.error("An error occurred", e)
-        process.exit(1);
-    });
+    .catch(handleProgramError);
 
 async function afterParse() {
     const configFile = cliCommand.config;
 
     if (!existsSync(configFile)) {
-        console.log(`Config file '${configFile}' does not exist`);
-        process.exit(1);
+        throw new UserError(`Config file '${configFile}' doesn't exist`);
     }
 
     serviceManager = new ServiceManager(configFile);
 }
 
-function delayExecution(callback: (...args: any[]) => void) : (...args: any[]) => void {
-    return (...args: any[]) => setTimeout(() => callback(...args), cliCommand.delay);
+function delayExecution(callback: (...args: any[]) => Promise<void>) : (...args: any[]) => void {
+    return (...args: any[]) => setTimeout(() => callback(...args).catch(handleProgramError), cliCommand.delay);
 }
