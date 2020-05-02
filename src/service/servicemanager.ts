@@ -1,20 +1,22 @@
 import {readFileSync, writeFileSync} from "fs";
 import {JsonMap, parse as parseTOML, stringify as stringifyTOML} from "@iarna/toml";
 import {Service} from "./service";
-import {map as _map, uniq as _uniq, flatten as _flatten} from 'lodash';
+import {flatten as _flatten, values as _values, mapValues as _mapValues, uniq as _uniq} from 'lodash';
 import {startEditor} from "../misc";
 import {serviceConfigTemplate} from "../constants";
 import {UserError} from "../error";
 import {ConfigDefinition, HasConfigDefinition} from "../config";
 import Joi from "@hapi/joi";
 
+type ServiceMap = { [key: string]: Service }
+
 export class ServiceManager implements HasConfigDefinition<ServiceManager> {
     configDefinition: ConfigDefinition<ServiceManager> = new ConfigDefinition<ServiceManager>({
-        services: Joi.array().required()
+        services: Joi.object().required()
     });
 
     private readonly configFile: string
-    services: Service[]
+    services: ServiceMap
 
     runningCache: Map<Service, boolean> = new Map()
     runningCacheExpire: number = 0
@@ -25,11 +27,15 @@ export class ServiceManager implements HasConfigDefinition<ServiceManager> {
         const configText: string = readFileSync(configFile, "utf8");
         const config = parseTOML(configText);
 
-        this.services = _map(config, (serviceConfig, name) => new Service(name, this, serviceConfig));
+        this.configDefinition.validate(config);
+
+        this.services = _mapValues(<JsonMap>config.services, (serviceConfig, name) => {
+            return new Service(name, this, serviceConfig)
+        })
     }
 
     resolveName(name: string): string[] {
-        const resolvedNames = this.services
+        const resolvedNames = _values(this.services)
             .filter(service => name.toLowerCase().toLowerCase() === "all" || name === service.name)
             .map(service => service.name);
 
@@ -44,7 +50,7 @@ export class ServiceManager implements HasConfigDefinition<ServiceManager> {
     }
 
     getService(name: string) {
-        return this.services.find(service => service.name === name);
+        return this.services[name];
     }
 
     getServices(names: string[]) {
@@ -66,12 +72,7 @@ export class ServiceManager implements HasConfigDefinition<ServiceManager> {
                 return
             }
 
-            const newService = new Service(name, this, parseTOML(text));
-            if (isNew) {
-                this.services.push(newService);
-            } else {
-                this.services[this.services.indexOf(service)] = newService;
-            }
+            this.services[name] = new Service(name, this, parseTOML(text));
 
             this.saveConfig();
             console.log("Successfully saved service");
@@ -85,7 +86,7 @@ export class ServiceManager implements HasConfigDefinition<ServiceManager> {
             throw new UserError("Service not found: ${name}")
         }
 
-        this.services.splice(this.services.indexOf(service), 1)
+        delete this.services[service.name];
         this.saveConfig()
     }
 }

@@ -1,6 +1,7 @@
 import {JsonMap} from "@iarna/toml";
 import Joi, {ObjectSchema, SchemaMap} from "@hapi/joi";
 import {ConfigError} from "./error";
+import {mapValues as _mapValues} from 'lodash';
 
 export interface HasConfigDefinition<Self extends HasConfigDefinition<Self>> {
     configDefinition: ConfigDefinition<Self>;
@@ -48,6 +49,8 @@ export class ConfigDefinition<ConfigObject extends HasConfigDefinition<ConfigObj
             return (<ConfigDefinition<any>>value.configDefinition).toConfigObject(value);
         } else if (Array.isArray(value)) {
             return value.map(entry => this.transform(entry));
+        } else if (typeof value === "object") {
+            return _mapValues(value, value => this.transform(value));
         } else {
             return value;
         }

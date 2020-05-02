@@ -3,7 +3,7 @@ import {JsonMap} from "@iarna/toml";
 import {Service} from "../service/service";
 import {closeSync, writeFileSync} from "fs";
 import tmp from 'tmp';
-import {map as _map} from 'lodash';
+import {map as _map, values as _values} from 'lodash';
 import {assignOnly, executeCommand} from "../misc";
 import {ConfigDefinition} from "../config";
 import Joi from "@hapi/joi";
@@ -65,7 +65,7 @@ export class TmuxServiceHandler extends BinServiceHandler {
             .filter(name => name.length > 0);
 
         this.service.manager.runningCache.clear();
-        this.service.manager.services
+        _values(this.service.manager.services)
             .filter(service => service.handler.type === "tmux")
             .forEach(service => {
                 const tmuxHandler = (<TmuxServiceHandler>service.handler);
