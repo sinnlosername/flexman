@@ -92,12 +92,12 @@ configCommand
     .command("enable <name>")
     .alias("en")
     .action(delayExecution(async (name: string) => {
-        if (serviceManager == null) return;
         serviceManager.getServices(serviceManager.resolveName(name)).forEach(service => {
-            service.enabled = true;
-            console.log(`Enabled: ${service.name}`);
-            serviceManager.saveConfig();
+            service.enabled = true
+            console.log(`Enabled: ${service.name}`)
         });
+
+        serviceManager.saveConfig();
     }))
 
 configCommand
@@ -105,10 +105,11 @@ configCommand
     .alias("dis")
     .action(delayExecution(async (name: string) => {
         serviceManager.getServices(serviceManager.resolveName(name)).forEach(service => {
-            service.enabled = false;
-            console.log(`Disabled: ${service.name}`);
-            serviceManager.saveConfig();
+            service.enabled = false
+            console.log(`Disabled: ${service.name}`)
         });
+
+        serviceManager.saveConfig();
     }))
 
 configCommand
