@@ -1,6 +1,7 @@
-import {HasToConfigObject} from "../misc";
+import {HasConfigDefinition} from "../config";
 
-export interface ServiceHandler extends HasToConfigObject {
+
+export interface ServiceHandler<Self extends ServiceHandler<Self>> extends HasConfigDefinition<Self> {
     type: string
     dir: string
 

@@ -48,10 +48,6 @@ export function assignOnly<T extends object>(target: T, source: object, ...names
     return target;
 }
 
-export interface HasToConfigObject {
-    toConfigObject(): JsonMap
-}
-
 export function startEditor(text: string, callback: (edited: boolean, text: string) => void) {
     const envFile = tmp.fileSync({mode: 0o600, prefix: 'edit-', detachDescriptor: true});
     try {

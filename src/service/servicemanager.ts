@@ -2,11 +2,17 @@ import {readFileSync, writeFileSync} from "fs";
 import {JsonMap, parse as parseTOML, stringify as stringifyTOML} from "@iarna/toml";
 import {Service} from "./service";
 import {map as _map, uniq as _uniq, flatten as _flatten} from 'lodash';
-import {HasToConfigObject, startEditor} from "../misc";
+import {startEditor} from "../misc";
 import {serviceConfigTemplate} from "../constants";
 import {UserError} from "../error";
+import {ConfigDefinition, HasConfigDefinition} from "../config";
+import Joi from "@hapi/joi";
 
-export class ServiceManager implements HasToConfigObject {
+export class ServiceManager implements HasConfigDefinition<ServiceManager> {
+    configDefinition: ConfigDefinition<ServiceManager> = new ConfigDefinition<ServiceManager>({
+        services: Joi.array().required()
+    });
+
     private readonly configFile: string
     services: Service[]
 
@@ -46,19 +52,13 @@ export class ServiceManager implements HasToConfigObject {
     }
 
     saveConfig() {
-        writeFileSync(this.configFile, stringifyTOML(this.toConfigObject()));
-    }
-
-    toConfigObject(): JsonMap {
-        const result: JsonMap = {};
-        this.services.forEach(service => result[service.name] = service.toConfigObject());
-        return result;
+        writeFileSync(this.configFile, stringifyTOML(this.configDefinition.toConfigObject(this)));
     }
 
     edit(name: string) {
         const service = this.getService(name);
         const isNew = (service == null);
-        const configText = isNew ? serviceConfigTemplate : stringifyTOML(service.toConfigObject());
+        const configText = isNew ? serviceConfigTemplate : stringifyTOML(service.configDefinition.toConfigObject(service));
 
         startEditor(configText, (edited: boolean, text: string) => {
             if (!edited) {

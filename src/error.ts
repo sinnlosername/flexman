@@ -15,3 +15,11 @@ export function handleProgramError(error: Error) {
 
     process.exit(process.env.LOCAL_TEST === "1" ? 0 : 1);
 }
+
+export class ConfigError extends UserError {
+    constructor(message) {
+        super(message);
+
+        this.name = "ConfigError";
+    }
+}

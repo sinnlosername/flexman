@@ -1,13 +1,26 @@
 import {JsonMap} from "@iarna/toml";
 import {ServiceHandler} from "../handler/servicehandler";
 import {BinServiceHandler} from "../handler/binservicehandler";
-import {assignOnly, HasToConfigObject, sleep} from '../misc';
+import {assignOnly, sleep} from '../misc';
 import {TmuxServiceHandler} from "../handler/tmuxservicehandler";
 import {ServiceManager} from "./servicemanager";
 import {ServiceStatus} from "./servicestatus";
+import Joi from "@hapi/joi";
+import {ConfigDefinition, HasConfigDefinition} from "../config";
 
-export class Service implements HasToConfigObject {
-    private static FIELDS: string[] = ["description", "enabled", "envs", "shutdownSeconds", "restartSeconds"];
+export class Service implements HasConfigDefinition<Service> {
+    //private static FIELDS: string[] = ["description", "enabled", "envs", "shutdownSeconds", "restartSeconds"];
+
+    configDefinition: ConfigDefinition<Service> = new ConfigDefinition<Service>({
+        description: Joi.string().required(),
+        enabled: Joi.bool().required(),
+        envs: Joi.object().unknown(true).optional(),
+        shutdownSeconds: Joi.number().min(1).required(),
+        restartSeconds: Joi.number().min(1).optional(),
+        handler: Joi.object().keys({
+            type: Joi.string().valid("bin", "tmux").required()
+        }).unknown(true).required()
+    });
 
     name: string
     description: string
@@ -17,13 +30,14 @@ export class Service implements HasToConfigObject {
     shutdownSeconds: number
     restartSeconds: number
 
-    handler: ServiceHandler
+    handler: ServiceHandler<any>
     manager: ServiceManager
 
     constructor(name: string, manager: ServiceManager, serviceConfig: JsonMap) {
         this.name = name;
 
-        assignOnly(this, serviceConfig, ...Service.FIELDS);
+        this.configDefinition.fromConfigObject(this, serviceConfig);
+        //assignOnly(this, serviceConfig, ...Service.FIELDS);
 
         const handlerConfig = <JsonMap>serviceConfig.handler;
         const handlerType = <string>handlerConfig.type;
@@ -100,10 +114,6 @@ export class Service implements HasToConfigObject {
             return ServiceStatus.DISABLED;
 
         return await this.handler.isRunning() ? ServiceStatus.RUNNING : ServiceStatus.STOPPED;
-    }
-
-    toConfigObject(): JsonMap {
-        return assignOnly(<JsonMap>{handler: this.handler.toConfigObject()}, this, ...Service.FIELDS);
     }
 }
 

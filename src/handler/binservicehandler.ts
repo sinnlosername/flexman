@@ -1,11 +1,21 @@
 import {JsonMap} from "@iarna/toml";
 import {ServiceHandler} from "./servicehandler";
 import {Service} from "../service/service";
-import {executeCommand, assignOnly, CommandResult} from "../misc";
+import {executeCommand, CommandResult} from "../misc";
+import {ConfigDefinition} from "../config";
+import Joi from "@hapi/joi";
 
-export class BinServiceHandler implements ServiceHandler {
-    protected static FIELDS: string[] = ["startCommand", "stopCommand", "killCommand", "isRunningCommand",
-        "shell", "dir", "type"];
+export class BinServiceHandler implements ServiceHandler<BinServiceHandler> {
+    configDefinition: ConfigDefinition<BinServiceHandler> = new ConfigDefinition<BinServiceHandler>({
+        type: Joi.string().valid("bin").required(),
+        startCommand: Joi.string().required(),
+        stopCommand: Joi.string().required(),
+        killCommand: Joi.string().required(),
+        isRunningCommand: Joi.string().required(),
+
+        shell: Joi.string().optional(),
+        dir: Joi.string().optional(),
+    });
 
     type: string;
     startCommand: string;
@@ -18,10 +28,12 @@ export class BinServiceHandler implements ServiceHandler {
 
     service: Service;
 
-    constructor(service: Service, handlerConfig: JsonMap = {}) {
+    constructor(service: Service, handlerConfig: JsonMap) {
         this.service = service;
 
-        assignOnly(this, handlerConfig, ...BinServiceHandler.FIELDS);
+        if (handlerConfig != null) {
+            this.configDefinition.fromConfigObject(this, handlerConfig);
+        }
     }
 
     isRunning(clearCache?: boolean): Promise<boolean> {
@@ -43,8 +55,5 @@ export class BinServiceHandler implements ServiceHandler {
     private executeHandlerCommand(command: string, envs: boolean = false): Promise<CommandResult> {
         return executeCommand(command, this.dir, this.shell, envs ? this.service.envs : undefined);
     }
-
-    toConfigObject(): JsonMap {
-        return assignOnly(<JsonMap>{}, this, ...BinServiceHandler.FIELDS);
-    }
 }
+

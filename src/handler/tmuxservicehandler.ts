@@ -4,9 +4,22 @@ import {Service} from "../service/service";
 import {closeSync, writeFileSync} from "fs";
 import tmp from 'tmp';
 import {map as _map} from 'lodash';
-import {assignOnly, executeCommand, HasToConfigObject} from "../misc";
+import {assignOnly, executeCommand} from "../misc";
+import {ConfigDefinition} from "../config";
+import Joi from "@hapi/joi";
 
 export class TmuxServiceHandler extends BinServiceHandler {
+    configDefinition: ConfigDefinition<BinServiceHandler> = new ConfigDefinition<BinServiceHandler>({
+        type: Joi.string().valid("tmux").required(),
+
+        session: Joi.string().alphanum().required(),
+        command: Joi.string().required(),
+        shutdownTrigger: Joi.string().required(),
+
+        shell: Joi.string().optional(),
+        dir: Joi.string().optional(),
+    });
+
     protected static FIELDS: string[] = ["session", "command", "shutdownTrigger", "shell", "dir", "type"];
 
     session: string
@@ -14,7 +27,7 @@ export class TmuxServiceHandler extends BinServiceHandler {
     shutdownTrigger: string
 
     constructor(service: Service, handlerConfig: JsonMap) {
-        super(service);
+        super(service, null);
 
         assignOnly(this, handlerConfig, ...TmuxServiceHandler.FIELDS);
 
