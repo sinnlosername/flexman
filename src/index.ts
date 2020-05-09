@@ -217,6 +217,6 @@ async function afterParse() {
     serviceManager = new ServiceManager(configFile);
 }
 
-function delayExecution(callback: (...args: any[]) => Promise<void>, exit?: boolean) : (...args: any[]) => void {
+function delayExecution(callback: (...args: any[]) => Promise<void>) : (...args: any[]) => void {
     return (...args: any[]) => setTimeout(() => callback(...args).catch(handleProgramError), cliCommand.delay * 1000);
 }
