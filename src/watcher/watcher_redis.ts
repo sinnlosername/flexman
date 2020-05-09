@@ -1,5 +1,5 @@
 import {createClient, RedisClient} from "redis";
-import {LoopInterval} from "./watcher";
+import {LoopInterval, Watcher} from "./watcher";
 
 export interface WatcherCommand {
     name: string,
@@ -50,7 +50,7 @@ export async function sendWatcherCommand(client: RedisClient, command: WatcherCo
     })
 }
 
-export async function isWatcherRunning(client: RedisClient): Promise<boolean> {
+export async function getWatcherStatus(client: RedisClient): Promise<WatcherStatus> {
     return new Promise((resolve, reject) => {
         client.get(KeyKeepAlive, (err, value) => {
             if (err != null) {
@@ -58,7 +58,18 @@ export async function isWatcherRunning(client: RedisClient): Promise<boolean> {
                 return
             }
 
-            resolve(value != null && parseInt(value) + LoopInterval + 1000 > Date.now());
+            if (value == null) {
+                resolve(WatcherStatus.STOPPED)
+                return;
+            }
+
+            resolve( parseInt(value) + LoopInterval + 1000 > Date.now() ? WatcherStatus.RUNNING : WatcherStatus.DEAD);
         });
     })
+}
+
+export enum WatcherStatus {
+    RUNNING,
+    STOPPED, // Watcher was stopped using 'stop' command
+    DEAD// Watcher crashed / was killed
 }
