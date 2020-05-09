@@ -1,6 +1,5 @@
 import {createClient, RedisClient} from "redis";
 import {LoopInterval, Watcher} from "./watcher";
-import {truncate} from "fs";
 
 export interface WatcherCommand {
     name: string,
@@ -65,6 +64,18 @@ export async function getWatcherStatus(client: RedisClient): Promise<WatcherStat
             }
 
             resolve( parseInt(value) + LoopInterval + 1000 > Date.now() ? WatcherStatus.RUNNING : WatcherStatus.DEAD);
+        });
+    })
+}
+
+export async function subscribeChannel(client: RedisClient, channel: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        client.subscribe(channel, (err: Error) => {
+            if (err != null) {
+                reject(err);
+            } else {
+                resolve();
+            }
         });
     })
 }
