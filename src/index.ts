@@ -37,7 +37,7 @@ let serviceManager : ServiceManager;
 
   flex watcher start
   flex watcher status
-  flex watcher reload // auto reload?
+  flex watcher reload
   flex watcher stop
 */
 
@@ -181,21 +181,28 @@ watcherCommand
     }))
 
 watcherCommand
+    .command("reload")
+    .description("Reload the config file for the watcher service")
+    .action(delayExecution(async () => await sendWatcherCommandIfRunning("reload")))
+
+watcherCommand
     .command("stop")
     .description("Stop the watcher service")
-    .action(delayExecution(async () => {
-        const redisClient = await openRedisClient();
+    .action(delayExecution(async () => await sendWatcherCommandIfRunning("stop")))
 
-        if (await getWatcherStatus(redisClient) !== WatcherStatus.RUNNING) {
-            console.log("The watcher service isn't running");
-            closeRedisClient(redisClient, true);
-            return;
-        }
+async function sendWatcherCommandIfRunning(command: string): Promise<void> {
+    const redisClient = await openRedisClient();
 
-        await sendWatcherCommand(redisClient, {name: "stop", data: null});
-        console.log("Sent stop command to watcher service");
+    if (await getWatcherStatus(redisClient) !== WatcherStatus.RUNNING) {
+        console.log("The watcher service isn't running");
         closeRedisClient(redisClient, true);
-    }))
+        return;
+    }
+
+    await sendWatcherCommand(redisClient, {name: command, data: null});
+    console.log(`Sent ${command} command to watcher service`);
+    closeRedisClient(redisClient, true);
+}
 
 cliCommand
     .name("flex")

@@ -24,7 +24,11 @@ export class ServiceManager implements HasConfigDefinition<ServiceManager> {
     constructor(configFile) {
         this.configFile = configFile;
 
-        const configText: string = readFileSync(configFile, "utf8");
+        this.reloadConfig();
+    }
+
+    reloadConfig() {
+        const configText: string = readFileSync(this.configFile, "utf8");
         const config = parseTOML(configText);
 
         this.configDefinition.validate(config);

@@ -28,6 +28,7 @@ export class Watcher {
     }
 
     private async ready() {
+        addCommandHandler(this.subClient, "reload", this.handleReload.bind(this))
         addCommandHandler(this.subClient, "stop", this.handleStop.bind(this))
         await subscribeChannel(this.subClient, KeyChannel);
 
@@ -36,6 +37,16 @@ export class Watcher {
         console.log("Watcher initialized! :)")
         setInterval(this.runLoop.bind(this), LoopInterval);
         this.runLoop(); // Initial call
+    }
+
+    private handleReload() {
+        try {
+            console.log("Reloading config...")
+            this.serviceManager.reloadConfig();
+            console.log("Config was reloaded")
+        } catch (e) {
+            console.error("Unable to reload config file", e)
+        }
     }
 
     private handleStop() {
