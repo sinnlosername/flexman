@@ -75,7 +75,7 @@ export class Service implements HasConfigDefinition<Service> {
             }
 
             console.log(`Started service: '${this.name}'`)
-            await addRedisListEntry(client, KeyStoppedServices, name);
+            await removeRedisListEntry(client, KeyStoppedServices, this.name);
         } catch (e) {
             console.error(`Error while starting service: '${this.name}'`, e)
         }
@@ -108,7 +108,7 @@ export class Service implements HasConfigDefinition<Service> {
                 console.log(`Service stopped: '${this.name}'`)
             }
 
-            await removeRedisListEntry(client, KeyStoppedServices, name);
+            await addRedisListEntry(client, KeyStoppedServices, this.name);
         } catch (e) {
             console.error(`Error while starting service: '${this.name}'`, e)
         }
