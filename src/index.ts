@@ -156,5 +156,5 @@ async function afterParse() {
 }
 
 function delayExecution(callback: (...args: any[]) => Promise<void>) : (...args: any[]) => void {
-    return (...args: any[]) => setTimeout(() => callback(...args).catch(handleProgramError), cliCommand.delay);
+    return (...args: any[]) => setTimeout(() => callback(...args).catch(handleProgramError), cliCommand.delay * 1000);
 }
