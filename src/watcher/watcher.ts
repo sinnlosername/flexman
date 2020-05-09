@@ -1,9 +1,9 @@
 import {ServiceManager} from "../service/servicemanager";
 import {
     addCommandHandler,
-    closeRedisClient,
+    closeRedisClient, getRedisListEntries,
     KeyChannel,
-    KeyKeepAlive,
+    KeyKeepAlive, KeyStoppedServices,
     openRedisClient,
     subscribeChannel
 } from "./watcher_redis";
@@ -57,7 +57,11 @@ export class Watcher {
         closeRedisClient(this.pubClient, true);
     }
 
-    private runLoop() {
+    private async runLoop() {
         this.pubClient.set(KeyKeepAlive, String(Date.now()));
+        const stoppedServices = getRedisListEntries(this.pubClient, KeyStoppedServices);
+
+
+
     }
 }

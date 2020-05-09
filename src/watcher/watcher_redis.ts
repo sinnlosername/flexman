@@ -10,19 +10,14 @@ export type WatcherCommandHandler = (command: WatcherCommand) => void;
 export const RedisPrefix = "flexman:watcher"
 export const KeyKeepAlive = `${RedisPrefix}:keepAlive`
 export const KeyChannel = `${RedisPrefix}:channel`
+export const KeyStoppedServices = `${RedisPrefix}:stoppedServices`
 
 export function openRedisClient(): Promise<RedisClient> {
     return new Promise<RedisClient>((resolve, reject) => {
         const client = createClient();
 
         client.on("error", reject);
-        client.ping(err => {
-            if (err != null) {
-                reject(err)
-            } else {
-                resolve(client);
-            }
-        });
+        client.ping(err => (err != null ? reject(err) : resolve(client)));
     });
 }
 
@@ -40,13 +35,7 @@ export function addCommandHandler(client: RedisClient, commandName: string, hand
 
 export async function sendWatcherCommand(client: RedisClient, command: WatcherCommand): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-        client.publish(KeyChannel, JSON.stringify(command), (err) => {
-            if (err != null) {
-                reject(err)
-            } else {
-                resolve();
-            }
-        });
+        client.publish(KeyChannel, JSON.stringify(command), (err) => (err != null ? reject(err) : resolve()));
     })
 }
 
@@ -70,14 +59,26 @@ export async function getWatcherStatus(client: RedisClient): Promise<WatcherStat
 
 export async function subscribeChannel(client: RedisClient, channel: string): Promise<void> {
     return new Promise((resolve, reject) => {
-        client.subscribe(channel, (err: Error) => {
-            if (err != null) {
-                reject(err);
-            } else {
-                resolve();
-            }
-        });
+        client.subscribe(channel, (err: Error) => (err != null ? reject(err) : resolve()));
     })
+}
+
+export async function addRedisListEntry(client: RedisClient, key: string, value: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        client.sadd(key, value, (err: Error) => (err != null ? reject(err) : resolve()));
+    });
+}
+
+export async function removeRedisListEntry(client: RedisClient, key: string, value: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        client.srem(key, value, (err: Error) => (err != null ? reject(err) : resolve()));
+    });
+}
+
+export async function getRedisListEntries(client: RedisClient, key: string): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+        client.smembers(key, (err, members) => (err != null ? reject(err) : resolve(members)));
+    });
 }
 
 export enum WatcherStatus {

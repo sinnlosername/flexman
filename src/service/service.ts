@@ -7,6 +7,8 @@ import {ServiceManager} from "./servicemanager";
 import {ServiceStatus} from "./servicestatus";
 import Joi from "@hapi/joi";
 import {ConfigDefinition, HasConfigDefinition} from "../config";
+import {RedisClient} from "redis";
+import {addRedisListEntry, KeyStoppedServices, removeRedisListEntry} from "../watcher/watcher_redis";
 
 export class Service implements HasConfigDefinition<Service> {
     //private static FIELDS: string[] = ["description", "enabled", "envs", "shutdownSeconds", "restartSeconds"];
@@ -57,7 +59,7 @@ export class Service implements HasConfigDefinition<Service> {
         this.manager = manager;
     }
 
-    async start() {
+    async start(client: RedisClient) {
         try {
             if (await this.handler.isRunning(true)) {
                 console.log(`Service ${this.name} already running`)
@@ -69,15 +71,17 @@ export class Service implements HasConfigDefinition<Service> {
 
             if (!await this.handler.isRunning(true)) {
                 console.log(`Unable to start service: '${this.name}', exit code: ${exitCode}`)
-            } else {
-                console.log(`Started service: '${this.name}'`)
+                return;
             }
+
+            console.log(`Started service: '${this.name}'`)
+            await addRedisListEntry(client, KeyStoppedServices, name);
         } catch (e) {
             console.error(`Error while starting service: '${this.name}'`, e)
         }
     }
 
-    async stopOrKill() {
+    async stopOrKill(client: RedisClient) {
         try {
             if (!await this.handler.isRunning(true)) {
                 console.log(`Service '${this.name}' not running`)
@@ -103,6 +107,8 @@ export class Service implements HasConfigDefinition<Service> {
             } else {
                 console.log(`Service stopped: '${this.name}'`)
             }
+
+            await removeRedisListEntry(client, KeyStoppedServices, name);
         } catch (e) {
             console.error(`Error while starting service: '${this.name}'`, e)
         }

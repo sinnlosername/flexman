@@ -50,11 +50,14 @@ cliCommand
     .alias("s")
     .description("start a service")
     .action(delayExecution(async (name : string, opts: Command) => {
+        const redisClient = await openRedisClient();
         const services = serviceManager.getServices(serviceManager.resolveNames(opts.args));
 
         for (const service of services) {
-            await service.start();
+            await service.start(redisClient);
         }
+
+        closeRedisClient(redisClient, true);
     }));
 
 cliCommand
@@ -86,11 +89,14 @@ cliCommand
     .alias("stop")
     .description("stop a service")
     .action(delayExecution(async (name : string, opts: Command) => {
+        const redisClient = await openRedisClient();
         const services = serviceManager.getServices(serviceManager.resolveNames(opts.args));
 
         for (const service of services) {
-            await service.stopOrKill();
+            await service.stopOrKill(redisClient);
         }
+
+        closeRedisClient(redisClient, true);
     }));
 
 const configCommand = cliCommand
