@@ -7,7 +7,7 @@ export interface WatcherCommand {
 }
 export type WatcherCommandHandler = (command: WatcherCommand) => void;
 
-export const RedisPrefix = "flexman:watcher:"
+export const RedisPrefix = "flexman:watcher"
 export const KeyKeepAlive = `${RedisPrefix}:keepAlive`
 export const KeyChannel = `${RedisPrefix}:channel`
 
