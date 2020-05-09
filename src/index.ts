@@ -3,6 +3,15 @@ import {existsSync} from 'fs';
 import {ServiceManager} from "./service/servicemanager";
 import {ServiceStatus} from "./service/servicestatus";
 import {handleProgramError, UserError} from "./error";
+import {
+    closeRedisClient,
+    getWatcherStatus,
+    openRedisClient,
+    sendWatcherCommand,
+    WatcherStatus
+} from "./watcher/watcher_redis";
+import {Watcher} from "./watcher/watcher";
+import {executeCommand} from "./misc";
 
 let serviceManager : ServiceManager;
 
@@ -27,6 +36,7 @@ let serviceManager : ServiceManager;
   flex config edit mcpublic
 
   flex watcher start
+  flex watcher status
   flex watcher reload // auto reload?
   flex watcher stop
 */
@@ -130,10 +140,62 @@ watcherCommand
     .command("start")
     .option("-D, --detach", "Start the watcher in the background (using tmux)")
     .description("Start the watcher service")
+    .action(delayExecution(async (opts: Command) => {
+        const redisClient = await openRedisClient();
+
+        if (await getWatcherStatus(redisClient) === WatcherStatus.RUNNING) {
+            console.log("The watcher service is already running");
+            closeRedisClient(redisClient, true);
+            return;
+        }
+
+        closeRedisClient(redisClient);
+
+        if (!<boolean>opts.detach) {
+            new Watcher(serviceManager)
+            return;
+        }
+
+        const command = process.argv.join(" ").replace(" -D", "")
+        const result = await executeCommand(`tmux new -d -s watcher '${command}'`, ".", "/bin/bash")
+
+        if (result.exitCode !== 0) {
+            // noinspection ExceptionCaughtLocallyJS
+            throw new UserError(`Unable to start watcher service in background. Exit Code: ${result.exitCode}, ` +
+                `Output: ${result.output}`)
+        } else {
+            console.log("Watcher service started in background. Use 'tmux -a -t watcher' to attach");
+            process.exit(0);
+        }
+    }))
+
+watcherCommand
+    .command("status")
+    .description("Get the status of the watcher service")
+    .action(delayExecution(async () => {
+        const redisClient = await openRedisClient();
+        const watcherStatus = await getWatcherStatus(redisClient);
+
+        console.log(`The watcher service is currently ${WatcherStatus[watcherStatus].toLowerCase()}.`)
+        closeRedisClient(redisClient, true);
+    }))
 
 watcherCommand
     .command("stop")
     .description("Stop the watcher service")
+    .action(delayExecution(async () => {
+        const redisClient = await openRedisClient();
+
+        if (await getWatcherStatus(redisClient) !== WatcherStatus.RUNNING) {
+            console.log("The watcher service isn't running");
+            closeRedisClient(redisClient, true);
+            return;
+        }
+
+        await sendWatcherCommand(redisClient, {name: "stop", data: null});
+        console.log("Sent stop command to watcher service");
+        closeRedisClient(redisClient, true);
+    }))
 
 cliCommand
     .name("flex")
@@ -155,6 +217,6 @@ async function afterParse() {
     serviceManager = new ServiceManager(configFile);
 }
 
-function delayExecution(callback: (...args: any[]) => Promise<void>) : (...args: any[]) => void {
+function delayExecution(callback: (...args: any[]) => Promise<void>, exit?: boolean) : (...args: any[]) => void {
     return (...args: any[]) => setTimeout(() => callback(...args).catch(handleProgramError), cliCommand.delay * 1000);
 }
