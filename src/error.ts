@@ -23,3 +23,15 @@ export class ConfigError extends UserError {
         this.name = "ConfigError";
     }
 }
+
+type AnyMethod = (...args: any[]) => any;
+
+export function withErrorHandler<T extends AnyMethod>(callback: T): T {
+    return <T>function (...args: any[]) {
+        try {
+            return callback(...args);
+        } catch (e) {
+            handleProgramError(e);
+        }
+    }
+}

@@ -37,7 +37,6 @@ export class Service implements HasConfigDefinition<Service> {
         this.name = name;
 
         this.configDefinition.fromConfigObject(this, serviceConfig);
-        //assignOnly(this, serviceConfig, ...Service.FIELDS);
 
         const handlerConfig = <JsonMap>serviceConfig.handler;
         const handlerType = <string>handlerConfig.type;

@@ -4,7 +4,7 @@ import {Service} from "./service";
 import {flatten as _flatten, values as _values, mapValues as _mapValues, uniq as _uniq} from 'lodash';
 import {startEditor} from "../misc";
 import {serviceConfigTemplate} from "../constants";
-import {UserError} from "../error";
+import {ConfigError, UserError, withErrorHandler} from "../error";
 import {ConfigDefinition, HasConfigDefinition} from "../config";
 import Joi from "@hapi/joi";
 
@@ -66,17 +66,24 @@ export class ServiceManager implements HasConfigDefinition<ServiceManager> {
         const isNew = (service == null);
         const configText = isNew ? serviceConfigTemplate : stringifyTOML(service.configDefinition.toConfigObject(service));
 
-        startEditor(configText, (edited: boolean, text: string) => {
+        startEditor(configText, withErrorHandler((edited: boolean, text: string) => {
             if (!edited) {
                 console.log("No changes detected. Aborting...")
                 return
             }
 
-            this.services[name] = new Service(name, this, parseTOML(text));
-
-            this.saveConfig();
-            console.log("Successfully saved service");
-        });
+            try {
+                this.services[name] = new Service(name, this, parseTOML(text));
+                this.saveConfig();
+                console.log("Successfully saved service");
+            } catch (e) {
+                if (e instanceof ConfigError) {
+                    console.log(`Unable to save config: ${e.message}`)
+                } else {
+                    throw e;
+                }
+            }
+        }));
     }
 
     removeService(name: string) {
