@@ -1,5 +1,12 @@
 import {ServiceManager} from "../service/servicemanager";
-import {addCommandHandler, KeyChannel, KeyKeepAlive, openRedisClient, subscribeChannel} from "./watcher_redis";
+import {
+    addCommandHandler,
+    closeRedisClient,
+    KeyChannel,
+    KeyKeepAlive,
+    openRedisClient,
+    subscribeChannel
+} from "./watcher_redis";
 import {RedisClient} from "redis";
 import {handleProgramError} from "../error";
 
@@ -17,21 +24,26 @@ export class Watcher {
         Promise.all([
             openRedisClient().then(client => this.subClient = client),
             openRedisClient().then(client => this.pubClient = client)
-        ]).then(async () => {
-            addCommandHandler(this.subClient, "stop", this.handleStop)
-            await subscribeChannel(this.subClient, KeyChannel);
+        ]).then(this.ready.bind(this)).catch(handleProgramError)
+    }
 
-            console.log("Watcher initialized! :)")
-            setInterval(this.runLoop.bind(this), LoopInterval);
-            this.runLoop(); // Initial call
-        }).catch(handleProgramError)
+    private async ready() {
+        addCommandHandler(this.subClient, "stop", this.handleStop.bind(this))
+        await subscribeChannel(this.subClient, KeyChannel);
+
+        process.on('SIGINT', () => this.handleStop());
+
+        console.log("Watcher initialized! :)")
+        setInterval(this.runLoop.bind(this), LoopInterval);
+        this.runLoop(); // Initial call
     }
 
     private handleStop() {
-        this.pubClient.set(KeyKeepAlive, null);
+        this.pubClient.del(KeyKeepAlive);
 
         console.log("Received stop command. Exiting...");
-        process.exit(0);
+        closeRedisClient(this.subClient);
+        closeRedisClient(this.pubClient, true);
     }
 
     private runLoop() {
