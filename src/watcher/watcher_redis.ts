@@ -1,5 +1,6 @@
 import {createClient, RedisClient} from "redis";
 import {LoopInterval, Watcher} from "./watcher";
+import {truncate} from "fs";
 
 export interface WatcherCommand {
     name: string,
@@ -72,4 +73,11 @@ export enum WatcherStatus {
     RUNNING,
     STOPPED, // Watcher was stopped using 'stop' command
     DEAD// Watcher crashed / was killed
+}
+
+export function closeRedis(client: RedisClient, exitProcess: boolean = false) {
+    client.end(true);
+    if (exitProcess) {
+        process.exit(0);
+    }
 }
