@@ -3,9 +3,8 @@ import {JsonMap, parse as parseTOML, stringify as stringifyTOML} from "@iarna/to
 import {Service} from "./service";
 import {flatten as _flatten, values as _values, mapValues as _mapValues, uniq as _uniq} from 'lodash';
 import {startEditor} from "../misc";
-import {serviceConfigTemplate} from "../constants";
 import {ConfigError, UserError, withErrorHandler} from "../error";
-import {ConfigDefinition, HasConfigDefinition} from "../config";
+import {ConfigDefinition, HasConfigDefinition, serviceConfigTemplate} from "../config";
 import Joi from "@hapi/joi";
 
 type ServiceMap = { [key: string]: Service }
