@@ -74,8 +74,4 @@ export class TmuxServiceHandler extends BinServiceHandler {
 
         this.service.manager.runningCacheExpire = Date.now() + 5000;
     }
-
-    toConfigObject(): JsonMap {
-        return assignOnly(<JsonMap>{}, this, ...TmuxServiceHandler.FIELDS);
-    }
 }

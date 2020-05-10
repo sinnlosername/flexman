@@ -1,8 +1,6 @@
 import {spawn} from "child_process";
-import {JsonMap} from "@iarna/toml";
-import {closeSync, existsSync, readFileSync, readSync, statSync, writeFileSync} from "fs";
+import {closeSync, existsSync, readFileSync, statSync, writeFileSync} from "fs";
 import tmp from "tmp";
-import {join} from "path";
 
 const editors: string[] = [
     "/bin/nano",
@@ -61,11 +59,11 @@ export function startEditor(text: string, callback: (edited: boolean, text: stri
         stdio: 'inherit'
     });
 
-    editorSpawn.on('data', function (data) {
+    editorSpawn.on('data', (data) => {
         process.stdout.pipe(data);
     });
 
-    editorSpawn.on('exit', function (data) {
+    editorSpawn.on('exit', () => {
         const postStat = statSync(envFile.name);
         const text = readFileSync(envFile.name, 'utf-8');
         envFile.removeCallback();

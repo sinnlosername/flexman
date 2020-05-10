@@ -1,7 +1,7 @@
 import {JsonMap} from "@iarna/toml";
 import {ServiceHandler} from "../handler/servicehandler";
 import {BinServiceHandler} from "../handler/binservicehandler";
-import {assignOnly, sleep} from '../misc';
+import {sleep} from '../misc';
 import {TmuxServiceHandler} from "../handler/tmuxservicehandler";
 import {ServiceManager} from "./servicemanager";
 import {ServiceStatus} from "./servicestatus";
@@ -16,8 +16,6 @@ import {
 } from "../watcher/watcher_redis";
 
 export class Service implements HasConfigDefinition<Service> {
-    //private static FIELDS: string[] = ["description", "enabled", "envs", "shutdownSeconds", "restartSeconds"];
-
     configDefinition: ConfigDefinition<Service> = new ConfigDefinition<Service>({
         description: Joi.string().required(),
         enabled: Joi.bool().required(),
