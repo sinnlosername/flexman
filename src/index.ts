@@ -12,6 +12,7 @@ import {
 } from "./watcher/watcher_redis";
 import {Watcher} from "./watcher/watcher";
 import {executeCommand} from "./misc";
+import {resolveConfigPath} from "./config";
 
 let serviceManager : ServiceManager;
 
@@ -42,7 +43,7 @@ let serviceManager : ServiceManager;
 */
 
 cliCommand
-    .option("-c, --config <file>", "Specifies the config file", "config.toml")
+    .option("-c, --config <file>", "Specifies the config file")
     .option("-d, --delay <seconds>", 'Delay the command for n seconds', input => parseInt(input), 0);
 
 cliCommand
@@ -139,7 +140,7 @@ configCommand
 
 const watcherCommand = cliCommand
     .command("watcher")
-    .alias("nsa")
+    .alias("kgb")
     .description("Control the watcher service");
 
 watcherCommand
@@ -221,7 +222,7 @@ cliCommand
     .catch(handleProgramError);
 
 async function afterParse() {
-    const configFile = cliCommand.config;
+    const configFile = cliCommand.config ?? resolveConfigPath();
 
     if (!existsSync(configFile)) {
         throw new UserError(`Config file '${configFile}' doesn't exist`);
