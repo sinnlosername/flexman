@@ -139,7 +139,7 @@ configCommand
 
 const watcherCommand = cliCommand
     .command("watcher")
-    .alias("nsa")
+    .alias("kgb")
     .description("Control the watcher service");
 
 watcherCommand
