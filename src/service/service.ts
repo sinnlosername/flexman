@@ -8,7 +8,12 @@ import {ServiceStatus} from "./servicestatus";
 import Joi from "@hapi/joi";
 import {ConfigDefinition, HasConfigDefinition} from "../config";
 import {RedisClient} from "redis";
-import {addRedisListEntry, KeyStoppedServices, removeRedisListEntry} from "../watcher/watcher_redis";
+import {
+    addRedisListEntry,
+    KeyStoppedServices,
+    removeRedisListEntry,
+    sendWatcherCommand
+} from "../watcher/watcher_redis";
 
 export class Service implements HasConfigDefinition<Service> {
     //private static FIELDS: string[] = ["description", "enabled", "envs", "shutdownSeconds", "restartSeconds"];
@@ -75,7 +80,9 @@ export class Service implements HasConfigDefinition<Service> {
             }
 
             console.log(`Started service: '${this.name}'`)
+
             await removeRedisListEntry(client, KeyStoppedServices, this.name);
+            await sendWatcherCommand(client, {name: "update-stopped-services", data: null})
         } catch (e) {
             console.error(`Error while starting service: '${this.name}'`, e)
         }
@@ -89,6 +96,10 @@ export class Service implements HasConfigDefinition<Service> {
             }
 
             console.log(`Stopping service: ${this.name}`)
+
+            // Update is sent before stop to avoid race condition
+            await addRedisListEntry(client, KeyStoppedServices, this.name);
+            await sendWatcherCommand(client, {name: "update-stopped-services", data: null})
 
             const exitCode = await this.handler.stop();
 
@@ -107,8 +118,6 @@ export class Service implements HasConfigDefinition<Service> {
             } else {
                 console.log(`Service stopped: '${this.name}'`)
             }
-
-            await addRedisListEntry(client, KeyStoppedServices, this.name);
         } catch (e) {
             console.error(`Error while starting service: '${this.name}'`, e)
         }
