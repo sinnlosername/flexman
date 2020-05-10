@@ -1,0 +1,28 @@
+{
+  "name": "flexman",
+  "version": "1.0.0",
+  "description": "A simpler but more powerful service manager",
+  "main": "dist/app.js",
+  "scripts": {
+    "start": "tsc && node dist/index.js",
+    "postinstall": "tsc"
+  },
+  "author": "Florian",
+  "license": "MIT",
+  "dependencies": {
+    "typescript": "^3.8.3",
+    "@hapi/joi": "^17.1.1",
+    "@iarna/toml": "^2.2.5",
+    "@types/hapi__joi": "^16.0.12",
+    "@types/node": "^13.13.2",
+    "@types/redis": "^2.8.20",
+    "@types/tmp": "^0.1.0",
+    "commander": "^5.1.0",
+    "lodash": "^4.17.15",
+    "redis": "^3.0.2",
+    "tmp": "^0.2.0"
+  },
+  "bin": {
+    "flex": "./bin/cli.js"
+  }
+}
