@@ -2,6 +2,7 @@ import {JsonMap} from "@iarna/toml";
 import Joi, {ObjectSchema, SchemaMap} from "@hapi/joi";
 import {ConfigError} from "./error";
 import {mapValues as _mapValues} from 'lodash';
+import {getRcConfig} from "./rcfile";
 
 export interface HasConfigDefinition<Self extends HasConfigDefinition<Self>> {
     configDefinition: ConfigDefinition<Self>;
@@ -55,6 +56,19 @@ export class ConfigDefinition<ConfigObject extends HasConfigDefinition<ConfigObj
             return value;
         }
     }
+}
+
+export function resolveConfigPath(): string {
+    if (process.env["FLEXMAN_CONFIG_FILE"] != null) {
+        return process.env["FLEXMAN_CONFIG_FILE"];
+    }
+
+    const rcConfig = getRcConfig();
+    if (rcConfig != null && rcConfig.CONFIG_PATH != null) {
+        return rcConfig.CONFIG_PATH;
+    }
+
+    return "./config.toml";
 }
 
 export const serviceConfigTemplate = `description = ""    # A simple description
