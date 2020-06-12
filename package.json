@@ -24,7 +24,7 @@
     "tmp": "^0.2.0"
   },
   "bin": {
-    "flex": "./bin/cli.js",
-    "flex-import": "./bin/import_cli.js"
+    "flex": "bin/flex.js",
+    "flex-import": "bin/flex_import.js"
   }
 }
