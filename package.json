@@ -1,10 +1,11 @@
 {
   "name": "flexman",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A simpler but more powerful service manager",
   "main": "dist/app.js",
   "scripts": {
     "start": "tsc && node dist/index.js",
+    "start-converter": "tsc && node dist/converter/cli.js",
     "postinstall": "tsc"
   },
   "author": "Florian",
@@ -23,6 +24,7 @@
     "tmp": "^0.2.0"
   },
   "bin": {
-    "flex": "./bin/cli.js"
+    "flex": "bin/flex.js",
+    "flex-import": "bin/flex_import.js"
   }
 }
