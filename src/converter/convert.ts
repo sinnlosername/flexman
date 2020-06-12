@@ -1,24 +1,24 @@
 import {JsonMap, stringify as stringifyTOML} from "@iarna/toml";
+import {forEach as _forEach} from 'lodash';
 
-export function convertConfig(json: any[]): string {
-    const newConfig: JsonMap = {};
-    newConfig.services = {};
+export function convertConfig(json: JsonMap[]): string {
+    const services: JsonMap[] = [];
 
-    for (const element of json) {
+    json.forEach(element => {
         const service: JsonMap = {};
 
         service["description"] = element["description"];
         service["enabled"] = element["enabled"];
         service["shutdownSeconds"] = element["shutdownSeconds"];
 
-        const restartSeconds: number = element["restartSeconds"];
-        const manual: boolean = element["manual"] ?? false;
+        const restartSeconds: number = <number>element["restartSeconds"];
+        const manual: boolean = <boolean>element["manual"] ?? false;
 
         if (restartSeconds != null && !manual)
             service["restartSeconds"] = restartSeconds;
 
         const handler: JsonMap = {};
-        const handlerFromService: JsonMap = element["handler"];
+        const handlerFromService: JsonMap = <JsonMap>element["handler"];
 
         if (handlerFromService["type"] === "TMUX") {
             handler["type"] = "tmux";
@@ -29,19 +29,20 @@ export function convertConfig(json: any[]): string {
             handler["dir"] = handlerFromService["dir"] ?? ".";
         } else if (handlerFromService["type"] === "BINARY") {
             handler["type"] = "bin";
-            let dir: string;
-            let shell: string;
-            Object.keys(handlerFromService).forEach(key => {
-                if (key === "type")
-                    return;
 
-                handler[`${key}Command`] = handlerFromService[key]["command"];
+            let dir: string = null;
+            let shell: string = null;
 
-                if (dir == null && handlerFromService[key]["dir"] != null)
-                    dir = handlerFromService[key]["dir"];
+            _forEach(handlerFromService, (handlerCommand, key) => {
+                if (key === "type") return;
+
+                handler[`${key}Command`] = handlerCommand["command"];
+
+                if (dir == null && handlerCommand["dir"] != null)
+                    dir = handlerCommand["dir"];
                 if (shell == null && handlerFromService[key]["shell"] != null)
-                    shell = handlerFromService[key]["shell"];
-            });
+                    shell = handlerCommand["shell"];
+            })
 
             handler["dir"] = dir ?? ".";
             handler["shell"] = shell ?? "/bin/bash";
@@ -49,17 +50,9 @@ export function convertConfig(json: any[]): string {
 
         service.handler = handler;
 
-        if (element["envs"] != null) {
-            const envs: JsonMap = {};
-            Object.keys(element["envs"]).forEach(key => {
-                envs[key] = element["envs"][key];
-            });
-            service.envs = envs;
-        }
+        service.envs = element["envs"];
+        services[<string>element["name"]] = service;
+    });
 
-        newConfig.services[element["name"]] = service;
-    }
-
-    return stringifyTOML(newConfig);
+    return stringifyTOML({ services });
 }
-

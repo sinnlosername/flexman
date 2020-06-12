@@ -3,7 +3,7 @@ import {convertConfig} from "./convert";
 import fs, {readFileSync, writeFileSync} from "fs";
 import {ServiceManager} from "../service/servicemanager";
 import tmp, {FileResult} from "tmp";
-import {handleProgramError} from "../error";
+import {handleProgramError, UserError} from "../error";
 
 cliCommand
     .name("flex-import")
@@ -15,8 +15,7 @@ cliCommand
         }
 
         if (!fs.existsSync(args[0])) {
-            console.log(`The provided file '${args[0]}' does not exist.`);
-            return;
+            throw new UserError(`The provided file '${args[0]}' does not exist.`);
         }
 
         const config: string = convertConfig(JSON.parse(readFileSync(args[0], "utf8")));
@@ -27,8 +26,7 @@ cliCommand
             new ServiceManager(configFile.name);
         } catch (e) {
             console.log(e);
-            console.log("The provided configuration is not valid, sorry.");
-            return;
+            throw new UserError("The provided configuration could not be converted to a valid flexman config. See above for details");
         } finally {
             configFile.removeCallback();
         }
