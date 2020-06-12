@@ -5,7 +5,6 @@
   "main": "dist/app.js",
   "scripts": {
     "start": "tsc && node dist/index.js",
-    "start-converter": "tsc && node dist/converter/cli.js",
     "postinstall": "tsc"
   },
   "author": "Florian",
@@ -24,7 +23,6 @@
     "tmp": "^0.2.0"
   },
   "bin": {
-    "flex": "./bin/cli.js",
-    "flex-import": "./bin/import_cli.js"
+    "flex": "./bin/cli.js"
   }
 }
