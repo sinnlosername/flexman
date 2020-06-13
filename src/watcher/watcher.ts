@@ -101,7 +101,7 @@ export class Watcher {
             if (this.stoppedServices.includes(service.name)) continue; // List might change while waiting for status
 
             console.log(`Service ${service.name} went offline. ` +
-                `It will be restarted in ${service.restartSeconds} seconds.` + Date.now());
+                `It will be restarted in ${service.restartSeconds} seconds.`);
             this.scheduledForRestart.push(service);
 
             setTimeout(async () => {
