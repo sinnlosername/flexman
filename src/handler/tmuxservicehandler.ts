@@ -40,7 +40,7 @@ export class TmuxServiceHandler extends BinServiceHandler {
 
         if (this.service.envs != null && Object.keys(this.service.envs).length > 0) {
             const envFile = tmp.fileSync({mode: 0o600, prefix: 'env-', keep: true, detachDescriptor: true})
-            writeFileSync(envFile.fd, _map(this.service.envs, (name, value) => name + "=" + value).join("\n"));
+            writeFileSync(envFile.fd, _map(this.service.envs, (value, name) => "export " + name + "=" + value).join("\n"));
             closeSync(envFile.fd);
 
             fullCommand = `envfile='${envFile.name}'; . $envfile; rm -f $envfile; ${this.command}`;
