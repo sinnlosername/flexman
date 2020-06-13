@@ -1,6 +1,6 @@
 {
   "name": "flexman",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A simpler but more powerful service manager",
   "main": "dist/app.js",
   "scripts": {
