@@ -19,7 +19,7 @@ cliCommand
         }
 
         const config: string = convertConfig(JSON.parse(readFileSync(args[0], "utf8")));
-        const configFile: FileResult = tmp.fileSync({mode: 660, keep: false});
+        const configFile: FileResult = tmp.fileSync({mode: 0o660, keep: false});
         writeFileSync(configFile.fd, config, "utf8");
 
         try {

@@ -2,7 +2,7 @@ import {JsonMap, stringify as stringifyTOML} from "@iarna/toml";
 import {forEach as _forEach} from 'lodash';
 
 export function convertConfig(json: JsonMap[]): string {
-    const services: JsonMap[] = [];
+    const services: JsonMap = {};
 
     json.forEach(element => {
         const service: JsonMap = {};
