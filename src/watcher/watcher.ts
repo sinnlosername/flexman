@@ -14,6 +14,7 @@ import {handleProgramError} from "../error";
 import {values as _values} from 'lodash';
 import {Service} from "../service/service";
 import {ServiceStatus} from "../service/servicestatus";
+import {serialize} from "v8";
 
 export const LoopInterval = 1000;
 
@@ -105,9 +106,7 @@ export class Watcher {
             this.scheduledForRestart.push(service);
 
             setTimeout(async () => {
-                // Services might have been started manually
-                if (await service.getStatus() === ServiceStatus.RUNNING) return;
-                await service.start(this.pubClient);
+                await service.start(this.pubClient, true);
                 this.scheduledForRestart.splice(this.scheduledForRestart.indexOf(service), 1);
             }, service.restartSeconds * 1000);
         }

@@ -62,10 +62,12 @@ export class Service implements HasConfigDefinition<Service> {
         this.manager = manager;
     }
 
-    async start(client: RedisClient) {
+    async start(client: RedisClient, hideAlreadyRunning: boolean = false) {
         try {
             if (await this.handler.isRunning(true)) {
-                console.log(`Service ${this.name} already running`)
+                if (!hideAlreadyRunning) {
+                    console.log(`Service ${this.name} already running`)
+                }
                 return;
             }
 
