@@ -171,7 +171,7 @@ watcherCommand
             throw new UserError(`Unable to start watcher service in background. Exit Code: ${result.exitCode}, ` +
                 `Output: ${result.output}`)
         } else {
-            console.log("Watcher service started in background. Use 'tmux -a -t watcher' to attach");
+            console.log("Watcher service started in background. Use 'tmux a -t watcher' to attach");
             process.exit(0);
         }
     }))
