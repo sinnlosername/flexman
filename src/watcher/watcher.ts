@@ -15,7 +15,7 @@ import {values as _values, debounce as _debounce} from 'lodash';
 import {Service} from "../service/service";
 import {ServiceStatus} from "../service/servicestatus";
 import {watch as fsWatch, statSync as fsStatSync, existsSync as fsExistsSync, FSWatcher} from "fs";
-import path from "path";
+import {join as pathJoin} from "path";
 
 export const LoopInterval = 1000;
 
@@ -101,7 +101,7 @@ export class Watcher {
         if (servicesWithFileWatcher.length > 0) {
             console.log("The following files will be watched for restart on file change:")
             this.getServicesWithFileWatcher().forEach(service => {
-                const fullPath = path.resolve(service.handler.dir, service.restartOnChange);
+                const fullPath = pathJoin(service.handler.dir, service.restartOnChange);
                 console.log(` => ${service.name} (watches: ${fullPath})`)
             })
         }
@@ -143,7 +143,7 @@ export class Watcher {
 
     private initFileWatchers(): void {
         this.getServicesWithFileWatcher().forEach(service => {
-            const filePath = path.resolve(service.handler.dir, service.restartOnChange);
+            const filePath = pathJoin(service.handler.dir, service.restartOnChange);
 
             if (!fsExistsSync(filePath)) {
                 console.error(`File for restart-on-change doesn't exist: ${filePath}`)
