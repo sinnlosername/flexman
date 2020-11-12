@@ -101,7 +101,8 @@ export class Watcher {
         if (servicesWithFileWatcher.length > 0) {
             console.log("The following files will be watched for restart on file change:")
             this.getServicesWithFileWatcher().forEach(service => {
-                console.log(` => ${service.name} (watches: ${service.restartOnChange})`)
+                const fullPath = path.resolve(service.handler.dir, service.restartOnChange);
+                console.log(` => ${service.name} (watches: ${fullPath})`)
             })
         }
     }
@@ -151,6 +152,7 @@ export class Watcher {
 
             let restartPromise;
             let previousLastModify = fsStatSync(filePath).mtimeMs;
+
             const fileWatcher = fsWatch(filePath, _debounce(async () => {
                 if (restartPromise != null) {
                     console.warn("File for restart-on-change was modified while restarting. No additional restart will be triggered");
@@ -159,15 +161,14 @@ export class Watcher {
 
                 if (!fsExistsSync(filePath)) {
                     console.error(`File for restart-on-change doesn't exist anymore: ${filePath}`);
+                    previousLastModify = null;
                     return;
                 }
 
                 const currentLastModify = fsStatSync(filePath).mtimeMs;
-                if (currentLastModify <= previousLastModify) { // File didn't change
-                    return;
-                }
-                previousLastModify = currentLastModify;
+                if (previousLastModify != null && currentLastModify <= previousLastModify) return; // File didn't change
 
+                previousLastModify = currentLastModify;
                 console.log(`Watched file for service ${service.name} changed. It will be restarted now.`);
 
                 restartPromise = service.stopOrKill(this.pubClient)
