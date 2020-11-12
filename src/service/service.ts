@@ -22,6 +22,7 @@ export class Service implements HasConfigDefinition<Service> {
         envs: Joi.object().unknown(true).optional(),
         shutdownSeconds: Joi.number().min(1).required(),
         restartSeconds: Joi.number().min(1).optional(),
+        restartOnChange: Joi.string().optional(),
         handler: Joi.object().keys({
             type: Joi.string().valid("bin", "tmux").required()
         }).unknown(true).required()
@@ -34,6 +35,8 @@ export class Service implements HasConfigDefinition<Service> {
     envs: { [key: string]: string }
     shutdownSeconds: number
     restartSeconds: number
+
+    restartOnChange: string
 
     handler: ServiceHandler<any>
     manager: ServiceManager

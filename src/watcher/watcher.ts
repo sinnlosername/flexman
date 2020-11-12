@@ -11,10 +11,11 @@ import {
 } from "./watcher_redis";
 import {RedisClient} from "redis";
 import {handleProgramError} from "../error";
-import {values as _values} from 'lodash';
+import {values as _values, debounce as _debounce} from 'lodash';
 import {Service} from "../service/service";
 import {ServiceStatus} from "../service/servicestatus";
-import {serialize} from "v8";
+import {watch as fsWatch, statSync as fsStatSync, existsSync as fsExistsSync, FSWatcher} from "fs";
+import path from "path";
 
 export const LoopInterval = 1000;
 
@@ -25,6 +26,8 @@ export class Watcher {
     serviceManager: ServiceManager
     scheduledForRestart: Service[] = []
     stoppedServices: string[] = []
+
+    fileWatchers: FSWatcher[] = []
 
     constructor(serviceManager: ServiceManager) {
         this.serviceManager = serviceManager;
@@ -44,12 +47,14 @@ export class Watcher {
 
         process.on('SIGINT', () => this.handleStop());
 
-        console.log("Watcher initialized! :)")
-        this.printWatchedServices()
+        this.initFileWatchers();
+        this.printWatchedServices();
 
         this.stoppedServices = await getRedisListEntries(this.pubClient, KeyStoppedServices);
 
         setInterval(this.runLoopWithErrorHandling.bind(this), LoopInterval);
+        console.log("Watcher initialized! :)");
+
         this.runLoopWithErrorHandling(); // Initial call
     }
 
@@ -58,6 +63,10 @@ export class Watcher {
             console.log("Reloading config...")
             this.serviceManager.reloadConfig();
             console.log("Config was reloaded")
+
+            this.stopFileWatchers();
+            this.initFileWatchers();
+
             this.printWatchedServices();
         } catch (e) {
             console.error("Unable to reload config file", e)
@@ -68,6 +77,7 @@ export class Watcher {
         this.pubClient.del(KeyKeepAlive);
 
         console.log("Received stop command. Exiting...");
+        this.stopFileWatchers();
         closeRedisClient(this.subClient);
         closeRedisClient(this.pubClient, true);
     }
@@ -79,10 +89,21 @@ export class Watcher {
     }
 
     private printWatchedServices() {
-        console.log("The following services will be watched:")
-        this.getWatchableService().forEach(service => {
-            console.log(` => ${service.name} (restarts after ${service.restartSeconds})`)
-        })
+        const servicesWithCrashWatcher = this.getServicesWithCrashWatcher();
+        if (servicesWithCrashWatcher.length > 0) {
+            console.log("The following services will be watched for restart on crash:")
+            this.getServicesWithCrashWatcher().forEach(service => {
+                console.log(` => ${service.name} (restarts after ${service.restartSeconds})`)
+            })
+        }
+
+        const servicesWithFileWatcher = this.getServicesWithFileWatcher();
+        if (servicesWithFileWatcher.length > 0) {
+            console.log("The following files will be watched for restart on file change:")
+            this.getServicesWithFileWatcher().forEach(service => {
+                console.log(` => ${service.name} (watches: ${service.restartOnChange})`)
+            })
+        }
     }
 
     private runLoopWithErrorHandling() {
@@ -92,7 +113,7 @@ export class Watcher {
     private async runLoop() {
         this.pubClient.set(KeyKeepAlive, String(Date.now()));
 
-        const services = this.getWatchableService()
+        const services = this.getServicesWithCrashWatcher()
             .filter(service => !this.stoppedServices.includes(service.name))
             .filter(service => this.scheduledForRestart.indexOf(service) === -1);
 
@@ -112,10 +133,61 @@ export class Watcher {
         }
     }
 
-    private getWatchableService() {
+    private getServicesWithCrashWatcher() {
         return (<Service[]>_values(this.serviceManager.services))
             .filter(service => service.enabled)
             .filter(service => service.restartSeconds != null)
             .filter(service => service.restartSeconds >= 0);
+    }
+
+    private initFileWatchers(): void {
+        this.getServicesWithFileWatcher().forEach(service => {
+            const filePath = path.resolve(service.handler.dir, service.restartOnChange);
+
+            if (!fsExistsSync(filePath)) {
+                console.error(`File for restart-on-change doesn't exist: ${filePath}`)
+                return;
+            }
+
+            let restartPromise;
+            let previousLastModify = fsStatSync(filePath).mtimeMs;
+            const fileWatcher = fsWatch(filePath, _debounce(async () => {
+                if (restartPromise != null) {
+                    console.warn("File for restart-on-change was modified while restarting. No additional restart will be triggered");
+                    return;
+                }
+
+                if (!fsExistsSync(filePath)) {
+                    console.error(`File for restart-on-change doesn't exist anymore: ${filePath}`);
+                    return;
+                }
+
+                const currentLastModify = fsStatSync(filePath).mtimeMs;
+                if (currentLastModify <= previousLastModify) { // File didn't change
+                    return;
+                }
+                previousLastModify = currentLastModify;
+
+                console.log(`Watched file for service ${service.name} changed. It will be restarted now.`);
+
+                restartPromise = service.stopOrKill(this.pubClient)
+                    .then(() => service.start(this.pubClient))
+                    .catch(e => console.error(`File watcher failed tor restart service: ${service.name}`, e))
+                    .finally(() => restartPromise = null);
+            }, 1500));
+
+            this.fileWatchers.push(fileWatcher);
+        })
+    }
+
+    private stopFileWatchers(): void {
+        this.fileWatchers.forEach(fileWatcher => fileWatcher.close());
+        this.fileWatchers.length = 0; // Clear the array
+    }
+
+    private getServicesWithFileWatcher() {
+        return (<Service[]>_values(this.serviceManager.services))
+            .filter(service => service.enabled)
+            .filter(service => service.restartOnChange != null);
     }
 }
